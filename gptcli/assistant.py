@@ -4,11 +4,17 @@ from attr import dataclass
 import platform
 from typing import Any, Dict, Iterator, Optional, TypedDict, List
 
-from gptcli.completion import CompletionProvider, ModelOverrides, Message
-from gptcli.google import GoogleCompletionProvider
-from gptcli.llama import LLaMACompletionProvider
-from gptcli.openai import OpenAICompletionProvider
-from gptcli.anthropic import AnthropicCompletionProvider
+from gptcli.completion import (
+    CompletionEvent,
+    CompletionProvider,
+    ModelOverrides,
+    Message,
+)
+from gptcli.providers.google import GoogleCompletionProvider
+from gptcli.providers.llama import LLaMACompletionProvider
+from gptcli.providers.openai import OpenAICompletionProvider
+from gptcli.providers.anthropic import AnthropicCompletionProvider
+from gptcli.providers.cohere import CohereCompletionProvider
 
 
 class AssistantConfig(TypedDict, total=False):
@@ -29,7 +35,10 @@ DEFAULT_ASSISTANTS: Dict[str, AssistantConfig] = {
         "messages": [
             {
                 "role": "system",
-                "content": f"You are a helpful assistant who is an expert in software development. You are helping a user who is a software developer. Your responses are short and concise. You include code snippets when appropriate. Code snippets are formatted using Markdown with a correct language tag. User's `uname`: {platform.uname()}",
+                "content": f"You are a helpful assistant who is an expert in software development. \
+You are helping a user who is a software developer. Your responses are short and concise. \
+You include code snippets when appropriate. Code snippets are formatted using Markdown \
+with a correct language tag. User's `uname`: {platform.uname()}",
             },
             {
                 "role": "user",
@@ -48,7 +57,9 @@ DEFAULT_ASSISTANTS: Dict[str, AssistantConfig] = {
         "messages": [
             {
                 "role": "system",
-                "content": f"You output only valid and correct shell commands according to the user's prompt. You don't provide any explanations or any other text that is not valid shell commands. User's `uname`: {platform.uname()}. User's `$SHELL`: {os.environ.get('SHELL')}.",
+                "content": f"You output only valid and correct shell commands according to the user's prompt. \
+You don't provide any explanations or any other text that is not valid shell commands. \
+User's `uname`: {platform.uname()}. User's `$SHELL`: {os.environ.get('SHELL')}.",
             }
         ],
     },
@@ -56,13 +67,19 @@ DEFAULT_ASSISTANTS: Dict[str, AssistantConfig] = {
 
 
 def get_completion_provider(model: str) -> CompletionProvider:
-    if model.startswith("gpt") or model.startswith("ft:gpt"):
+    if (
+        model.startswith("gpt")
+        or model.startswith("ft:gpt")
+        or model.startswith("oai-compat:")
+    ):
         return OpenAICompletionProvider()
     elif model.startswith("claude"):
         return AnthropicCompletionProvider()
     elif model.startswith("llama"):
         return LLaMACompletionProvider()
-    elif model.startswith("chat-bison"):
+    elif model.startswith("command") or model.startswith("c4ai"):
+        return CohereCompletionProvider()
+    elif model.startswith("gemini"):
         return GoogleCompletionProvider()
     else:
         raise ValueError(f"Unknown model: {model}")
@@ -101,7 +118,7 @@ class Assistant:
 
     def complete_chat(
         self, messages, override_params: ModelOverrides = {}, stream: bool = True
-    ) -> Iterator[str]:
+    ) -> Iterator[CompletionEvent]:
         model = self._param("model", override_params)
         completion_provider = get_completion_provider(model)
         return completion_provider.complete(

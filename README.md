@@ -1,12 +1,18 @@
 # gpt-cli
 
-Command-line interface for ChatGPT Claude and Bard.
+Command-line interface for chat LLMs.
+
+## Supported providers
+
+- OpenAI
+- Anthropic
+- Google Gemini
+- Cohere
+- Other APIs compatible with OpenAI (e.g. Together, OpenRouter, local models with LM Studio)
 
 ![screenshot](https://github.com/kharvd/gpt-cli/assets/466920/ecbcccc4-7cfa-4c04-83c3-a822b6596f01)
 
 ## Features
-
-### **Coming soon** - Code Interpreter support https://github.com/kharvd/gpt-cli/pull/37
 
 - **Command-Line Interface**: Interact with ChatGPT or Claude directly from your terminal.
 - **Model Customization**: Override the default model, temperature, and top_p values for each assistant, giving you fine-grained control over the AI's behavior.
@@ -21,16 +27,19 @@ Command-line interface for ChatGPT Claude and Bard.
 ## Installation
 
 This install assumes a Linux/OSX machine with Python and pip available.
+
 ```bash
 pip install gpt-command-line
 ```
 
 Install latest version from source:
+
 ```bash
 pip install git+https://github.com/kharvd/gpt-cli.git
 ```
 
 Or install by cloning the repository manually:
+
 ```bash
 git clone https://github.com/kharvd/gpt-cli.git
 cd gpt-cli
@@ -172,6 +181,24 @@ $ gpt pirate
 Ahoy, matey! What be bringing ye to these here waters? Be it treasure or adventure ye seek, we be sailing the high seas together. Ready yer map and compass, for we have a long voyage ahead!
 ```
 
+### Customize OpenAI API URL
+
+If you are using other models compatible with the OpenAI Python SDK, you can configure them by modifying the `openai_base_url` setting in the config file or using the `OPENAI_BASE_URL` environment variable .
+
+Example:
+
+```
+openai_base_url: https://your-custom-api-url.com/v1
+```
+
+Use `oai-compat:` prefix for the model name to pass non-GPT model names to the API. For example, to chat with Llama3-70b on [https://together.ai](Together), use the following command:
+
+```bash
+OPENAI_API_KEY=$TOGETHER_API_KEY OPENAI_BASE_URL=https://api.together.xyz/v1 gpt general --model oai-compat:meta-llama/Llama-3-70b-chat-hf
+```
+
+The prefix is stripped before sending the request to the API.
+
 ## Other chat bots
 
 ### Anthropic Claude
@@ -188,24 +215,32 @@ or a config line in `~/.config/gpt-cli/gpt.yml`:
 anthropic_api_key: <your_key_here>
 ```
 
-Now you should be able to run `gpt` with `--model claude-v1` or `--model claude-instant-v1`:
+Now you should be able to run `gpt` with `--model claude-3-(opus|sonnet|haiku)-<date>`.
 
 ```bash
-gpt --model claude-v1
+gpt --model claude-3-opus-20240229
 ```
 
-### Google Bard (PaLM 2)
-Similar to Claude, set the Google API key
+### Google Gemini
 
 ```bash
 export GOOGLE_API_KEY=<your_key_here>
 ```
-or a config line:
+
+or
+
 ```yaml
 google_api_key: <your_key_here>
 ```
 
-Run `gpt` with the correct model:
+### Cohere
+
 ```bash
-gpt --model chat-bison-001
+export COHERE_API_KEY=<your_key_here>
+```
+
+or
+
+```yaml
+cohere_api_key: <your_key_here>
 ```

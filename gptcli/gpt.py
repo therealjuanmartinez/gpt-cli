@@ -9,12 +9,13 @@ if sys.version_info < MIN_PYTHON:
 import os
 from typing import cast
 import openai
+import google.generativeai as genai
 import argparse
 import sys
 import logging
 import datetime
-import google.generativeai as genai
-import gptcli.anthropic
+import gptcli.providers.anthropic
+import gptcli.providers.cohere
 from gptcli.assistant import (
     Assistant,
     DEFAULT_ASSISTANTS,
@@ -32,7 +33,7 @@ from gptcli.config import (
     choose_config_file,
     read_yaml_config,
 )
-from gptcli.llama import init_llama_models
+from gptcli.providers.llama import init_llama_models
 from gptcli.logging import LoggingChatListener
 from gptcli.cost import PriceChatListener
 from gptcli.session import ChatSession
@@ -63,7 +64,9 @@ def parse_args(config: GptCliConfig):
         default=config.default_assistant,
         nargs="?",
         choices=list(set([*DEFAULT_ASSISTANTS.keys(), *config.assistants.keys()])),
-        help="The name of assistant to use. `general` (default) is a generally helpful assistant, `dev` is a software development assistant with shorter responses. You can specify your own assistants in the config file ~/.config/gpt-cli/gpt.yml. See the README for more information.",
+        help="The name of assistant to use. `general` (default) is a generally helpful assistant, `dev` is a software \
+development assistant with shorter responses. You can specify your own assistants in the config file \
+~/.config/gpt-cli/gpt.yml. See the README for more information.",
     )
     parser.add_argument(
         "--no_markdown",
@@ -82,7 +85,8 @@ def parse_args(config: GptCliConfig):
         "--temperature",
         type=float,
         default=None,
-        help="The temperature to use for the chat session. Overrides the default temperature defined for the assistant.",
+        help="The temperature to use for the chat session. Overrides the default temperature defined \
+for the assistant.",
     )
     parser.add_argument(
         "--top_p",
@@ -109,20 +113,24 @@ def parse_args(config: GptCliConfig):
         type=str,
         action="append",
         default=None,
-        help="If specified, will not start an interactive chat session and instead will print the response to standard output and exit. May be specified multiple times. Use `-` to read the prompt from standard input. Implies --no_markdown.",
+        help="If specified, will not start an interactive chat session and instead will print the response to standard \
+output and exit. May be specified multiple times. Use `-` to read the prompt from standard input. \
+Implies --no_markdown.",
     )
     parser.add_argument(
         "--execute",
         "-e",
         type=str,
         default=None,
-        help="If specified, passes the prompt to the assistant and allows the user to edit the produced shell command before executing it. Implies --no_stream. Use `-` to read the prompt from standard input.",
+        help="If specified, passes the prompt to the assistant and allows the user to edit the produced shell command \
+before executing it. Implies --no_stream. Use `-` to read the prompt from standard input.",
     )
     parser.add_argument(
         "--no_stream",
         action="store_true",
         default=False,
-        help="If specified, will not stream the response to standard output. This is useful if you want to use the response in a script. Ignored when the --prompt option is not specified.",
+        help="If specified, will not stream the response to standard output. This is useful if you want to use the \
+response in a script. Ignored when the --prompt option is not specified.",
     )
     parser.add_argument(
         "--no_price",
@@ -174,18 +182,19 @@ def main():
         # Disable overly verbose logging for markdown_it
         logging.getLogger("markdown_it").setLevel(logging.INFO)
 
+    if config.openai_base_url:
+        openai.base_url = config.openai_base_url
+
     if config.api_key:
         openai.api_key = config.api_key
     elif config.openai_api_key:
         openai.api_key = config.openai_api_key
-    else:
-        print(
-            "No API key found. Please set the OPENAI_API_KEY environment variable or `api_key: <key>` value in ~/.config/gpt-cli/gpt.yml"
-        )
-        sys.exit(1)
 
     if config.anthropic_api_key:
-        gptcli.anthropic.api_key = config.anthropic_api_key
+        gptcli.providers.anthropic.api_key = config.anthropic_api_key
+
+    if config.cohere_api_key:
+        gptcli.providers.cohere.api_key = config.cohere_api_key
 
     if config.google_api_key:
         genai.configure(api_key=config.google_api_key)
