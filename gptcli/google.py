@@ -49,10 +49,10 @@ class GoogleCompletionProvider(CompletionProvider):
         model_name = args["model"]
 
         if messages[0]["role"] == "system":
-            system_instruction = "suckit"# messages[0]["content"]
+            system_instruction = messages[0]["content"]
             messages = messages[1:]
         else:
-            system_instruction = "-"
+            system_instruction = None
 
         chat_history = [map_message(m) for m in messages]
 

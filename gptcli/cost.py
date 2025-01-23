@@ -1,5 +1,5 @@
 from gptcli.assistant import Assistant
-from gptcli.completion import Message, UsageEvent
+from gptcli.completion import Message, ModelOverrides, UsageEvent
 from gptcli.session import ChatListener
 
 from rich.console import Console
@@ -22,12 +22,13 @@ class PriceChatListener(ChatListener):
         self,
         messages: List[Message],
         response: Message,
+        args: ModelOverrides,
         usage: Optional[UsageEvent] = None,
     ):
         if usage is None:
             return
 
-        model = self.assistant._param("model")
+        model = self.assistant._param("model", args)
         num_tokens = usage.total_tokens
         cost = usage.cost
 
